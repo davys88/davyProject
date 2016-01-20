@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<taglib xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-jsptaglibrary_2_1.xsd"
+    version="2.1">
+    
+<description> EL에서 함수실행</description>
+<tlib-version>1.0</tlib-version>
+<short-name>ELfunctions</short-name>
+<uri>/ELfunctions</uri>
+
+<function>
+	<description>Data 객체를 (yyyy-MM-dd(E) HH:mm:ss) 형태로 출력</description>
+	<name>format</name>
+	<function-class>form.ELDateFormat</function-class>
+	<function-signature>java.lang.String toFormat( java.util.Date)</function-signature>
+</function>
+</taglib>

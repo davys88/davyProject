@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.site.board.dao.BoardMapper">
+	<!-- 게시물 기본 조회 -->
+	<sql id="boardCommon">
+		SELECT num, author, title, writeday, readcnt, reproot, repstep, repindent, passwd
+		FROM board
+		<where>
+			<if test="search=='title'">
+				<![CDATA[title LIKE '%' || #{keyword} || '%' ]]>
+			</if>
+			<if test="search=='content'">
+				<![CDATA[content LIKE '%' || #{keyword} || '%' ]]>
+			</if>
+			<if test="search=='author'">
+				<![CDATA[author LIKE '%' || #{keyword} || '%' ]]>
+			</if>
+		</where>
+	</sql>
+	<select id="list" parameterType="board" resultType="board">
+		/* Board - list */
+		SELECT num, author, title, TO_CHAR(writeday, 'YYYY/MM/DD') as writeday, readcnt, reproot, repstep, repindent, passwd
+		FROM (SELECT list.* , ROWNUM AS RNUM FROM(<include refid="boardCommon"></include>) list)
+		<where>
+			<if test="start_row != null and start_row != ''">
+				<if test="end_row != null and end_row !=''">
+					RNUM BETWEEN #{start_row} AND #{end_row}
+				</if>			
+			</if>
+		</where>
+	</select>
+	
+	<!-- 전체 레코드수 구현 -->
+	<select id="listCnt" parameterType="board" resultType="int">
+		/* Board - boardListCnt */
+		SELECT NVL(count(1), 0)
+		FROM (SELECT list.*, ROWNUM as RNUM FROM (<include refid="boardCommon"></include>) list) 
+	</select>
+	
+	<!-- 게시물 입력 -->
+	<insert id="write" parameterType="board">
+	/* Board - write */
+	<selectKey keyProperty="num" resultType="int" order="BEFORE">
+		SELECT board_seq.nextval FROM dual
+	</selectKey>
+		insert into board(num, title, author, content, repRoot, repStep, repIndent, passwd, readcnt)
+		values(#{num}, #{title}, #{author}, #{content}, #{num}, 0, 0, #{passwd}, 0)
+	</insert>
+	
+	<!-- 게시물 상세 조회 -->
+	<select id="detail" parameterType="int" resultType="board">
+		SELECT num, author, title, content, TO_CHAR(writeday, 'YYYY/MM/DD HH24:MI:SS') writeday, 	readcnt, repRoot, repIndent, repStep 		
+		FROM board WHERE num = #{num} 
+	</select>
+	
+	<!-- 조회수 증가 -->
+	<update id="readCount" parameterType="int">
+			UPDATE board SET readcnt = readcnt+1
+			WHERE num=#{num}
+	</update>
+	
+	<!-- 패스워드 체크 -->
+	<select id="pwdCheck" parameterType="board" resultType="int">
+			SELECT NVL((SELECT 1 FROM board WHERE num = #{num} AND passwd = #{passwd}), 0) as result 
+			FROM dual 
+	</select>
+	
+	<!-- 게시물 내용 수정 -->
+	<update id="update" parameterType="board">
+		UPDATE board SET title=#{title}, content=#{content}, passwd=#{passwd} WHERE num=#{num}
+	</update>
+	
+	<!-- 게시물 삭제 -->
+	<delete id="delete" parameterType="board">
+		DELETE board WHERE num = #{num}
+	</delete>
+	
+	<!-- 게시물 답변 등록 -->
+	<insert id="replyWrite">
+		<selectKey keyProperty="num" resultType="int" order="BEFORE">
+			SELECT board_seq.nextval FROM dual
+		</selectKey>
+		INSERT INTO board (num, title, author, content, repRoot, repStep, repIndent, passwd, readcnt)
+		VALUES (#{num}, #{title}, #{author}, #{content}, #{repRoot}, #{repStep}+1, #{repIndent}+1, #{passwd}, 0)
+	</insert>
+	
+	<!-- 게시물 답변 등록 시 repStep값 업데이트 -->
+	<update id="reqStepUpdate" parameterType="board">
+		/* Board - repStepUpdate */
+		UPDATE board SET repStep = repStep + 1 
+		WHERE repRoot = #{repRoot} AND repStep > #{repStep}
+	</update>
+</mapper>
